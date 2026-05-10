@@ -122,7 +122,7 @@ find "${REPO}" -maxdepth 3 \
 grep -l "mcpServers\|mcp_servers\|\"command\":" "${REPO}/README.md" 2>/dev/null
 ```
 
-**C. Key top-level files present** — check for each: `README.md`, `CHANGELOG.md`, `LICENSE`, `Makefile`, `.goreleaser.yml`, `.goreleaser.yaml`, `package.json`, `Cargo.toml`, `pyproject.toml`, `go.mod`, `tsconfig.json`, `vitest.config.ts`, `jest.config.*`, `.golangci.yml`, `.github/`, `AGENTS.md`, `CLAUDE.md`, `CODEX.md`, `docs/`, `Dockerfile`, `install.sh`, `Formula/`
+**C. Key top-level files present** — check for each: `README.md`, `CHANGELOG.md`, `LICENSE`, `Makefile`, `.goreleaser.yml`, `.goreleaser.yaml`, `package.json`, `Cargo.toml`, `pyproject.toml`, `go.mod`, `tsconfig.json`, `vitest.config.ts`, `jest.config.*`, `.golangci.yml`, `.github/`, `AGENTS.md`, `CLAUDE.md`, `CODEX.md`, `docs/`, `Dockerfile`, `install.sh`, `Formula/`, `mkdocs.yml`, `docusaurus.config.js`, `docusaurus.config.ts`, `astro.config.mjs`, `_config.yml`, `hugo.toml`, `hugo.yaml`, `conf.py`, `typedoc.json`, `.readthedocs.yaml`
 
 **D. Test file count**:
 
@@ -135,27 +135,44 @@ find "${REPO}" \
   2>/dev/null | wc -l
 ```
 
-**E. Badge inventory** — extract badge image URLs from README.md to identify which
-signals the author chooses to surface publicly:
+**E. Badge inventory** — extract full badge markdown from README.md to capture both
+the image URL and surrounding link/style metadata:
 
 ```bash
+# Linked badges: [![alt](img-url)](link-url)
+grep -oE '\[!\[[^]]*\]\([^)]+\)\]\([^)]+\)' "${REPO}/README.md" 2>/dev/null | head -30
+
+# Unlinked badge images: ![alt](img-url)
 grep -oE '!\[[^]]*\]\(https://[^)]+\)' "${REPO}/README.md" 2>/dev/null \
-  | grep -oE 'https://[^)]+' \
-  | grep -iE '(shields\.io|codecov\.io|coveralls\.io|pkg\.go\.dev|goreportcard\.com|github\.com/[^/]+/[^/]+/(actions|workflows)|badgen\.net|snyk\.io|deps\.rs)' \
-  | head -20
+  | grep -viE '\[!\[' | head -10
+
+# Banner check — first 10 lines, any image (badge or not)
+head -10 "${REPO}/README.md" 2>/dev/null \
+  | grep -oE '!\[[^]]*\]\([^)]+\)'
 ```
 
-For each badge URL found, classify by type:
-- **CI/Build** — `github.com/*/actions` or `*/workflows/*` badge
-- **Coverage** — `codecov.io`, `coveralls.io`
-- **Docs** — `pkg.go.dev`, `godoc.org`
-- **Quality** — `goreportcard.com`, `snyk.io`, `deps.rs`
-- **Version/Release** — `shields.io/github/v/release`, `shields.io/npm/v`
-- **License** — `shields.io/github/license`
-- **Social** — stars, forks, downloads
+For each badge markdown found, record:
+1. The full markdown expression (preserves link target, alt text, and raw URL with all query parameters)
+2. The image URL domain — classify by type:
+   - **CI/Build** — `github.com/*/actions` or `*/workflows/*` badge
+   - **Coverage** — `codecov.io`, `coveralls.io`
+   - **Docs** — `pkg.go.dev`, `godoc.org`
+   - **Quality** — `goreportcard.com`, `snyk.io`, `deps.rs`
+   - **Version/Release** — `shields.io/github/v/release`, `shields.io/npm/v`
+   - **License** — `shields.io/github/license`
+   - **Social** — stars, forks, downloads
+   - **AI/LLM Docs** — `deepwiki.com`, or shields.io badges whose link target points to `deepwiki.com`
+3. From the raw query string, extract and note:
+   - `style=` value if present (`flat-square`, `flat`, `for-the-badge`, or absent)
+   - `color=` or `labelColor=` value if present (hex or named)
+   - `logo=` value if present (the Simple Icons slug, e.g., `npm`, `swift`, `node.js`, `homebrew`, `apple`)
+   - `logoColor=` value if present
+4. Whether the badge is linked (wrapped in `[...](url)`) and what the link target domain is
+5. Banner image: if the banner-check grep returns an image whose URL does not contain a known badge
+   domain (`shields.io`, `codecov.io`, `badgen.net`, `github.com/*/workflows`, `deepwiki.com`),
+   treat it as a project banner — record its relative path and alt text separately
 
-Also note the badge provider (shields.io, GitHub-generated, custom SVG) and whether
-badges link to live CI runs, coverage reports, or package registries.
+Record badges in row order as they appear in README.md — order is itself a convention signal.
 
 **F. README section headings** — capture the structural outline of README.md:
 
@@ -189,6 +206,8 @@ For each repo, read files in this order. Stop after ~50 files per repo (token bu
 **P4 — Tooling and CI** (read in full):
 - `.github/workflows/ci.yml` (or `ci.yaml`)
 - `.github/workflows/release.yml` (or `release.yaml`)
+- Any `.github/workflows/` file whose name contains `docs`, `pages`, `deploy`, or `preview` — these reveal documentation CI patterns
+- Doc-site config files if present (detected in Step 3C): `mkdocs.yml`, `docusaurus.config.js`, `docusaurus.config.ts`, `astro.config.mjs`, `_config.yml`, `hugo.toml`, `hugo.yaml`, `conf.py`, `typedoc.json`, `.readthedocs.yaml`
 - `Makefile` (first 80 lines)
 - `package.json` (scripts and devDependencies sections)
 - `vitest.config.ts`, `jest.config.*`, `pytest.ini`, `pyproject.toml`
@@ -255,8 +274,22 @@ For each signal family, note which repos show the pattern. Then classify:
 - Linter and formatter choice
 - Release automation: goreleaser, npm publish, semantic-release, GitHub Releases
 - Distribution channels: Homebrew, npm, brew, go install, pre-built binaries
-- CI pipeline shape: what steps, in what order
+- **CI pipeline shape** — for each CI workflow file sampled, record:
+  - Gate order: the sequence of jobs/steps (e.g., lint → test → build → security → release) — state the canonical order if 3+ repos agree
+  - Multi-OS matrix: whether the workflow tests on `ubuntu-latest`, `macos-latest`, `windows-latest`, or subsets; note which OS combinations are used
+  - Version matrix: Go, Node, or Python versions tested simultaneously (e.g., `matrix: go: [1.22, 1.23]`)
+  - Cache usage: `actions/cache` or `actions/setup-*` built-in caching for Go modules, npm, pip, or Cargo
+  - Security scanning: CodeQL (`github/codeql-action`), Trivy (`aquasecurity/trivy-action`), gosec, Semgrep, zizmor — which scanners run, on which trigger (every push, PRs only, scheduled scan)
+  - Dependency automation: Dependabot (`dependabot.yml`) or Renovate (`renovate.json`) — which ecosystems are managed (npm, gomod, github-actions), automerge policy for patch/minor updates
+  - Release triggers: push of a version tag `v*`, manual `workflow_dispatch`, or merge to main/master
+  - Changelog/release notes generation: git-cliff, conventional-changelog, release-please, goreleaser changelog — note the required commit-message convention (Conventional Commits, etc.)
 - Architecture targets: universal binary, arm64+amd64, cross-platform claims
+- **Documentation CI** — detect whether any workflow deploys a documentation website:
+  - **Doc-site tool**: MkDocs (`mkdocs build` / `mkdocs gh-deploy`), Docusaurus (`npm run build` + deploy step), VitePress, Astro, Jekyll (`jekyll build`), Hugo (`hugo` command), Sphinx (`sphinx-build` or `make html`), TypeDoc (`typedoc`), godoc (via `gomarkdoc` or similar static export)
+  - **Deployment target**: GitHub Pages (`actions/configure-pages` + `actions/deploy-pages`, or legacy `peaceiris/actions-gh-pages`), Netlify deploy action, Vercel deploy action, ReadTheDocs webhook trigger
+  - **Trigger**: push to main/master, release tag, PR preview deployment (ephemeral deploy per PR), manual `workflow_dispatch`
+  - **Workflow file**: note the file name (e.g., `docs.yml`, `pages.yml`, `deploy-docs.yml`) and whether it is a standalone workflow or a job inside `release.yml`
+  Classify across repos: Strong (3+), Moderate (2), Single (Repo-Specific Notes).
 - **Installation mechanics** — for each distribution channel, record the exact user-facing install command and the underlying mechanism:
   - **Homebrew**: goreleaser `brews:` block → `brew install <tap>/<formula>`. Note the tap name, formula template, and any `caveats`.
   - **npm / npx**: `package.json` `bin` field + `name` → `npm install -g <pkg>` or `npx <pkg>`. Note scoped vs. unscoped and `engines.node` constraint.
@@ -280,11 +313,17 @@ For each signal family, note which repos show the pattern. Then classify:
   - Tail sections: "Contributing", "License", "Acknowledgements"
   - Depth preference: flat `##` sections vs. nested `###` sub-sections
   - Synthesize a representative README structure tree showing all canonical sections with presence counts (e.g., `[9/11 repos]`)
-- **Badge patterns** — using the badge URLs captured in Step 3E, detect:
-  - Which badge types appear in 3+ repos (Strong): CI, coverage, version, docs, quality, license
-  - Badge provider consistency: all shields.io? GitHub-generated CI badges? Mixed?
+- **Badge patterns** — using the badge metadata captured in Step 3E, detect:
+  - Which badge types appear in 3+ repos (Strong): CI, coverage, version, docs, quality, license, AI/LLM docs
+  - Badge provider consistency: all shields.io? GitHub-generated CI badges? badgen.net? Mixed?
   - Whether coverage badges show a live threshold value or only pass/fail state
   - Canonical badge ordering if consistent across repos
+  - **Visual style**: does the corpus use a consistent `style=` parameter — `flat-square`, `flat`, `for-the-badge`, or unset (shields.io default)? State it as a convention if 3+ repos agree
+  - **Color palette**: are custom hex colors (e.g., `?color=ffd60a`) or named colors used? Is there a consistent palette across badge rows?
+  - **Logo usage**: which shields.io Simple Icons logos appear (`logo=npm`, `logo=swift`, `logo=node.js`, `logo=homebrew`, `logo=apple`, etc.)? Is `logoColor=white` (or another value) applied consistently?
+  - **Banner image**: is there a project banner (`![Name](assets/banner.png)` or similar) placed before the badge row? Note the relative path and naming convention if present
+  - **Badge linking**: are badges wrapped in `[![badge](img-url)](link-url)` syntax (linked) or bare `![badge](img-url)` (unlinked)? Which types are consistently linked and to where?
+  - **AI/LLM documentation badges**: DeepWiki badges (`deepwiki.com`) or similar AI-generated docs service badges — note their presence as a signal of AI-first documentation practice
 
 **Family 6 — Code philosophy**
 - Entry point size: thin vs fat main
@@ -613,7 +652,7 @@ Read it. Extract its `<style>` block (slide sizing, scroll-snap, counter, title 
 2. **Scope** — compact repo grid with language badges; unavailable repos shown dimmed.
 3. **Top Patterns** — ranked list of all Strong patterns with evidence counts.
 4. **Pattern deep-dive** — one slide per notable Strong pattern (code snippet + implication callout); typically 2–3 slides.
-5. **Project Structure** — the canonical dir-tree (`<pre class="dir-tree">` with ASCII connectors) for the primary language.
+5. **Project Structure** — the canonical dir-tree (`<pre class="dir-tree">` with ASCII connectors) for the primary language. **Copy the tree verbatim from TASTE.md's "Project Structure" section.** Never compress multi-level paths onto a single line (e.g., `cmd/<name>/main.go` on one line is wrong — each directory must be its own indented level: `cmd/` → `<name>/` → `main.go`). Never flatten a nested directory by inlining its parent (e.g., `.github/workflows/` is wrong — render `.github/` with `workflows/` indented beneath it).
 6. **Tooling & CI** — CI pipeline stages (text list or mini strip) + formatter/linter highlights.
 7. **Best Practices** — top 6–7 actionable items as short bullets.
 8. **Anti-patterns** — top 4–6 items with red accent.
@@ -625,7 +664,7 @@ Read it. Extract its `<style>` block (slide sizing, scroll-snap, counter, title 
 - Fixed `#counter` at bottom-right: `"{current} / {total}"` in monospace 12px.
 - Keyboard: ArrowRight/Down/Space → next; ArrowLeft/Up → previous. Smooth `scrollIntoView`.
 - Code on slides: dark slate background (`#141413`), same token colors as TASTE.html.
-- Dir-trees on slides: `<pre class="dir-tree">` with `white-space: pre`, `.dir`/`.file`/`.comment` spans.
+- Dir-trees on slides: use a `<div class="dir-tree">` or `<pre class="dir-tree">` element. **The `.dir-tree` CSS rule MUST include `white-space: pre; overflow-x: auto;`** — without `white-space: pre`, all newlines and indentation collapse into a single unreadable inline flow. Use `.hl` / `.dim` spans for highlighting.
 - Content must fit one viewport — no internal scroll. Split long content across two slides if needed.
 - Use same CSS variable palette (`--clay`, `--olive`, `--rust`, `--gray-*`) as TASTE.html.
 - Write the result to `./TASTE-SLIDES.html`.
@@ -706,9 +745,24 @@ README.md
 <Note canonical section names (e.g., "Installation" preferred over "Install"), depth
 preference (flat vs. nested), and any unexpectedly absent or unique sections.>
 
-<Also note which badge types appear consistently and in what order: CI badge, coverage
-badge, version badge, docs badge, license badge. State the provider (shields.io,
-GitHub-generated, custom) and whether coverage badges show live threshold values.>
+<Badge style — document all of the following if the corpus shows consistent patterns:>
+
+- **Badge types and order**: which types appear consistently (CI, coverage, version, docs, quality, license, AI/LLM docs) and in what canonical sequence
+- **Provider**: shields.io, GitHub-generated, badgen.net, or mixed — state it as a convention if 3+ repos agree
+- **Visual style**: the `style=` parameter used (e.g., `flat-square`) — if consistent, prescribe it; if mixed, note the split
+- **Color palette**: any shared `color=` or `labelColor=` hex/named values; note whether the palette is consistent across the badge row
+- **Logo conventions**: which `logo=` values appear and whether `logoColor=` is standardized (e.g., always `white`)
+- **Linking practice**: whether badges are consistently linked to their target service (CI run, coverage report, package registry, docs site)
+- **Banner image**: whether a project banner precedes the badge row — if so, note the file naming convention (e.g., `assets/banner.png`, `docs/img/banner.png`)
+- **AI/LLM badges**: presence of DeepWiki or similar AI-generated documentation badges — treat as a signal of AI-first documentation practice
+
+<If 3+ repos share the same badge row style, include a representative example using one repo's actual markdown. Show the full linked-badge syntax including query parameters, so readers can copy the pattern directly. Example format:>
+
+```markdown
+[![CI](https://img.shields.io/github/actions/workflow/status/owner/repo/ci.yml?style=flat-square&logo=github&logoColor=white)](https://github.com/owner/repo/actions)
+[![npm](https://img.shields.io/npm/v/pkg?style=flat-square&logo=npm&logoColor=white)](https://npmjs.com/package/pkg)
+[![License](https://img.shields.io/github/license/owner/repo?style=flat-square)](LICENSE)
+```
 
 ---
 
@@ -746,10 +800,18 @@ where the corpus provides evidence. Keep excerpts short and relevant.>
 ### Release
 ### CI
 
-<Describe the CI pipeline steps and gate order. Include a "Badges" line noting which
-badge types appear consistently across repos (CI, coverage, version, godoc, go report
-card, license), which provider is used, and whether they link to live runs or reports.
-If 3+ repos share the same badge set, state it as a prescriptive convention.>
+<Describe the CI pipeline shape across the corpus. Cover each of the following if the corpus provides evidence:>
+
+- **Gate order**: the canonical job/step sequence (e.g., lint → test → security → build → release) — state it prescriptively if 3+ repos agree
+- **OS and version matrix**: which OS combinations are tested (`ubuntu-latest`, `macos-latest`, `windows-latest`) and which language version matrices are used
+- **Caching**: whether `actions/cache` or setup-action built-in caching is used; which ecosystems (Go modules, npm, pip, Cargo) and the cache key strategy
+- **Security scanning**: which scanners run (CodeQL, Trivy, gosec, Semgrep, zizmor) and at which trigger (every push, PRs only, scheduled scan)
+- **Dependency automation**: Dependabot or Renovate — which ecosystems are managed and whether automerge is enabled for patch/minor updates
+- **Release triggers**: what event fires the release job — version tag `v*`, manual dispatch, or merge to main
+- **Changelog generation**: which tool produces release notes (git-cliff, release-please, conventional-changelog, goreleaser) and the required commit-message convention it enforces
+- **Documentation deployment**: if any workflow deploys a docs site — the tool used (MkDocs, Docusaurus, VitePress, Hugo, Sphinx, TypeDoc), the deployment target (GitHub Pages, Netlify, Vercel, ReadTheDocs), and the trigger (push to main, release tag, PR preview)
+
+<If the corpus shows a canonical CI structure, state it prescriptively: "All repos run lint and test on every push, security scanning on PRs only, and release on v* tags." Concrete is more useful than hedged.>
 
 ### Distribution
 

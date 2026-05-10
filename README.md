@@ -18,6 +18,14 @@ Add `--html` to also get a polished `TASTE.html` styled with the [thariqs design
 
 → Produces both `TASTE.md` and `TASTE.html`.
 
+Add `--slides` (requires `--html`) to also get a fullscreen slide deck `TASTE-SLIDES.html`:
+
+```
+/taste --html --slides steipete/sonoscli openclaw/wacli steipete/oracle
+```
+
+→ Produces `TASTE.md`, `TASTE.html`, and `TASTE-SLIDES.html`.
+
 ---
 
 ## What It Produces
@@ -37,8 +45,6 @@ Add `--html` to also get a polished `TASTE.html` styled with the [thariqs design
 | **Anti-Patterns** | What this style consistently avoids |
 | **Repo-Specific Notes** | What makes each repo worth studying |
 | **Practical Playbook** | Checklists for starting, outputting, releasing |
-
-See [`examples/steipete-cli-corpus/TASTE.md`](examples/steipete-cli-corpus/TASTE.md) for a real example generated from 10 CLI tools, and [`examples/steipete-cli-corpus/TASTE.html`](examples/steipete-cli-corpus/TASTE.html) for the HTML version.
 
 ---
 
@@ -105,7 +111,7 @@ Any agent that supports `SKILL.md` or `AGENTS.md` can use this skill. Drop `SKIL
 1. **Clone** each repo with `git clone --depth 1` into `~/.taste/corpus/<timestamp>/`
 2. **Inventory** language composition, frameworks, and key files per repo
 3. **Sample** up to 50 prioritized files per repo: entry points → config → tests → CI → docs
-4. **Detect signals** across six families: CLI surface, architecture, testing, tooling, docs, code philosophy
+4. **Detect signals** across ten families: CLI surface, architecture, testing, tooling, docs, code philosophy, concrete conventions, project structure, AI collaboration, MCP integration
 5. **Synthesize** into a `TASTE.md` written to your current directory
 
 Repos are cached in `~/.taste/corpus/` — re-running with the same URLs is fast. To force a fresh clone, delete that directory:
@@ -118,14 +124,18 @@ rm -rf ~/.taste/corpus/
 
 ## Signal Taxonomy
 
-The skill looks for patterns across six families:
+The skill looks for patterns across ten families:
 
 - **CLI surface** — global flags, output formats, completions, `doctor` commands, version injection
-- **Architecture** — persistence strategy, config resolution, secret storage, local-first patterns
-- **Testing** — framework, coverage thresholds, test distribution, race detection
-- **Tooling & shipping** — build system, linter, release automation, distribution channels, CI shape
-- **Documentation** — README structure, docs site, example density, troubleshooting docs
+- **Architecture & data** — persistence strategy, config resolution, secret storage, local-first patterns
+- **Testing discipline** — framework, coverage thresholds, test distribution, race detection
+- **Tooling & shipping** — build system, linter, release automation, CI pipeline shape, documentation deployment, distribution channels
+- **Documentation** — README structure, badge style, docs site, example density, troubleshooting docs
 - **Code philosophy** — entry point size, error handling style, naming conventions, abstraction level
+- **Concrete code conventions** — import ordering, docstring style, typing posture, error idioms, test idioms
+- **Project structure** — top-level directory conventions, entry point placement, module boundaries
+- **AI collaboration** — presence of `CLAUDE.md`/`AGENTS.md`/`CODEX.md`, documented agent rules and conventions
+- **MCP integration** — SDK used, transport, tool registration pattern, dual-mode CLI+server behavior
 
 Signals appearing in 3+ repos become top-level recurring patterns. Signals in 2 repos appear in style guidelines. Single-repo observations go into repo-specific notes.
 
