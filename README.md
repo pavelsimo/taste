@@ -26,6 +26,14 @@ Add `--slides` (requires `--html`) to also get a fullscreen slide deck `TASTE-SL
 
 → Produces `TASTE.md`, `TASTE.html`, and `TASTE-SLIDES.html`.
 
+Add `--output <dir>` to write all outputs to a specific directory instead of `./`:
+
+```
+/taste --html --output ~/reports steipete/sonoscli openclaw/wacli steipete/oracle
+```
+
+→ Writes `TASTE.md` (and `TASTE.html` if `--html`) into `~/reports/`.
+
 ---
 
 ## What It Produces
