@@ -1,42 +1,40 @@
 # taste
 
-A skill for AI agents that extracts engineering conventions from a corpus of repositories.
+A skill for AI coding assistants that extracts engineering conventions from a corpus of repositories. Works with Claude Code, Cursor, GitHub Copilot, and OpenAI Codex.
 
-Give it a list of repos. It clones them, samples key files, and produces a `TASTE.md` — a structured analysis of the shared patterns, best practices, style guidelines, and product philosophy across the set.
+## Usage
 
 ```
 /taste steipete/sonoscli openclaw/wacli steipete/oracle
 ```
 
-→ Produces `TASTE.md` in your current directory.
+Clones each repo, samples key files, and produces a `TASTE.md` — a structured analysis of shared patterns, best practices, style guidelines, and product philosophy.
 
-Add `--html` to also get a polished `TASTE.html` styled with the [thariqs design system](https://thariqs.github.io/html-effectiveness/):
+Pass `--html` to also get a polished `TASTE.html` styled with the [thariqs design system](https://thariqs.github.io/html-effectiveness/):
 
 ```
 /taste --html steipete/sonoscli openclaw/wacli steipete/oracle
 ```
 
-→ Produces both `TASTE.md` and `TASTE.html`.
-
-Add `--slides` (requires `--html`) to also get a fullscreen slide deck `TASTE-SLIDES.html`:
+Pass `--slides` (requires `--html`) to also get a fullscreen slide deck `TASTE-SLIDES.html`:
 
 ```
 /taste --html --slides steipete/sonoscli openclaw/wacli steipete/oracle
 ```
 
-→ Produces `TASTE.md`, `TASTE.html`, and `TASTE-SLIDES.html`.
-
-Add `--output <dir>` to write all outputs to a specific directory instead of `./`:
+Pass `--output <dir>` to write all outputs to a specific directory:
 
 ```
 /taste --html --output ~/reports steipete/sonoscli openclaw/wacli steipete/oracle
 ```
 
-→ Writes `TASTE.md` (and `TASTE.html` if `--html`) into `~/reports/`.
+Input accepts GitHub shorthands, full URLs, and local paths — mixed freely:
 
----
+```
+/taste openclaw/wacli ~/Projects/my-local-tool https://github.com/some/other-repo
+```
 
-## What It Produces
+## Output
 
 `TASTE.md` follows a consistent structure:
 
@@ -54,11 +52,12 @@ Add `--output <dir>` to write all outputs to a specific directory instead of `./
 | **Repo-Specific Notes** | What makes each repo worth studying |
 | **Practical Playbook** | Checklists for starting, outputting, releasing |
 
----
+## Installation
 
-## Install
+<details>
+<summary>Claude Code</summary>
 
-### Claude Code
+Claude Code supports custom slash commands defined as markdown files under `.claude/commands/`. Dropping `SKILL.md` there registers a `/taste` command in any Claude Code session inside that project.
 
 ```bash
 mkdir -p ~/.claude/skills/taste
@@ -66,53 +65,45 @@ curl -fsSL https://raw.githubusercontent.com/pavelsimo/taste/main/SKILL.md \
   -o ~/.claude/skills/taste/SKILL.md
 ```
 
-Then invoke in any session:
+**invoke:** type `/taste owner/repo1 owner/repo2` in Claude Code (CLI, VS Code extension, or web).
 
+</details>
+
+<details>
+<summary>Cursor</summary>
+
+Place `SKILL.md` in your project's `.cursor/rules/taste.mdc` or install it as a personal rule.
+
+**invoke:** use the `/taste` command in Cursor's agent panel.
+
+</details>
+
+<details>
+<summary>GitHub Copilot</summary>
+
+Copilot Chat picks up repository-level custom instructions from `.github/copilot-instructions.md`. Paste the skill content there so Copilot follows the same conventions.
+
+```bash
+mkdir -p .github
+cat SKILL.md >> .github/copilot-instructions.md
 ```
-/taste owner/repo1 owner/repo2 owner/repo3
-```
 
-### Cursor
+**invoke:** open Copilot Chat and say `analyze taste for owner/repo1 owner/repo2`.
 
-Place `SKILL.md` in your project's `.cursor/rules/taste.mdc` or install it as a personal rule. Invoke with the `/taste` command in Cursor's agent panel.
+</details>
 
-### GitHub Copilot
-
-Copy the contents of `SKILL.md` into `.github/copilot-instructions.md` in a project where you want taste analysis available, or follow Copilot's skill installation documentation.
-
-### OpenAI Codex / other agents
+<details>
+<summary>OpenAI Codex</summary>
 
 Any agent that supports `SKILL.md` or `AGENTS.md` can use this skill. Drop `SKILL.md` into the appropriate skills directory for your agent.
 
----
-
-## Usage
-
-### GitHub repos (shorthand)
-
-```
-/taste steipete/sonoscli openclaw/wacli steipete/oracle
+```bash
+cat SKILL.md >> ~/.codex/instructions.md
 ```
 
-### Full GitHub URLs
+**invoke:** `codex "run taste on owner/repo1 owner/repo2"`.
 
-```
-/taste https://github.com/steipete/sonoscli https://github.com/openclaw/wacli
-```
-
-### Local paths
-
-```
-/taste ~/Projects/myapp1 ~/Projects/myapp2
-```
-
-### Mixed
-
-```
-/taste openclaw/wacli ~/Projects/my-local-tool https://github.com/some/other-repo
-```
-
----
+</details>
 
 ## How It Works
 
@@ -127,8 +118,6 @@ Repos are cached in `~/.taste/corpus/` — re-running with the same URLs is fast
 ```bash
 rm -rf ~/.taste/corpus/
 ```
-
----
 
 ## Signal Taxonomy
 
@@ -147,7 +136,9 @@ The skill looks for patterns across ten families:
 
 Signals appearing in 3+ repos become top-level recurring patterns. Signals in 2 repos appear in style guidelines. Single-repo observations go into repo-specific notes.
 
----
+## Contributing
+
+Open an issue or pull request. Keep commits atomic and follow the [commit conventions](https://github.com/pavelsimo/commit).
 
 ## License
 
