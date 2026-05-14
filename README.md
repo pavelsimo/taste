@@ -1,4 +1,4 @@
-# taste
+# taste skill
 
 A skill for agents that extracts engineering conventions from a corpus of repositories. Works with Claude Code, Cursor, GitHub Copilot, and OpenAI Codex.
 
