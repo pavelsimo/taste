@@ -54,56 +54,9 @@ Input accepts GitHub shorthands, full URLs, and local paths — mixed freely:
 
 ## Installation
 
-<details>
-<summary>Claude Code</summary>
-
-Claude Code supports custom slash commands defined as markdown files under `.claude/commands/`. Dropping `SKILL.md` there registers a `/taste` command in any Claude Code session inside that project.
-
 ```bash
-mkdir -p ~/.claude/skills/taste
-curl -fsSL https://raw.githubusercontent.com/pavelsimo/taste/main/SKILL.md \
-  -o ~/.claude/skills/taste/SKILL.md
+npx skills@latest add pavelsimo/taste
 ```
-
-**invoke:** type `/taste owner/repo1 owner/repo2` in Claude Code (CLI, VS Code extension, or web).
-
-</details>
-
-<details>
-<summary>Cursor</summary>
-
-Place `SKILL.md` in your project's `.cursor/rules/taste.mdc` or install it as a personal rule.
-
-**invoke:** use the `/taste` command in Cursor's agent panel.
-
-</details>
-
-<details>
-<summary>GitHub Copilot</summary>
-
-Copilot Chat picks up repository-level custom instructions from `.github/copilot-instructions.md`. Paste the skill content there so Copilot follows the same conventions.
-
-```bash
-mkdir -p .github
-cat SKILL.md >> .github/copilot-instructions.md
-```
-
-**invoke:** open Copilot Chat and say `analyze taste for owner/repo1 owner/repo2`.
-
-</details>
-
-<details>
-<summary>OpenAI Codex</summary>
-
-Any agent that supports `SKILL.md` or `AGENTS.md` can use this skill. Drop `SKILL.md` into the appropriate skills directory for your agent.
-
-```bash
-cat SKILL.md >> ~/.codex/instructions.md
-```
-
-**invoke:** `codex "run taste on owner/repo1 owner/repo2"`.
-
-</details>
 
 ## How It Works
 
