@@ -241,7 +241,7 @@ Analyze all 10 families: CLI surface, Architecture/data, Testing, Tooling/shippi
 Documentation, Code philosophy, Code conventions, Project structure, AI collaboration,
 MCP integration.
 
-See **[SIGNAL-FAMILIES.md](SIGNAL-FAMILIES.md)** for the complete signal definitions.
+See **[reference/signal-families.md](reference/signal-families.md)** for the complete signal definitions.
 
 ### Step 6 — Write TASTE.md
 
@@ -269,7 +269,7 @@ Fetches reference files from the thariqs HTML effectiveness corpus, selects appr
 components, and writes a self-contained `TASTE.html` with at least 5 distinct component types.
 The result should feel like an editorial analysis artifact — scannable, visual, and opinionated.
 
-See **[HTML-GENERATION.md](HTML-GENERATION.md)** for the full design system reference,
+See **[reference/html-generation.md](reference/html-generation.md)** for the full design system reference,
 component selection guide, and rendering rules.
 
 ### Step 8 — Generate TASTE-SLIDES.html (only if `--slides` was passed)
@@ -278,11 +278,11 @@ Produces an 8–12 slide browser-native deck using scroll-snap, covering: title,
 patterns, pattern deep-dives, project structure, tooling/CI, best practices, anti-patterns,
 playbook quickstart, and close.
 
-See **[HTML-GENERATION.md](HTML-GENERATION.md)** (Slides section) for the full rendering rules.
+See **[reference/html-generation.md](reference/html-generation.md)** (Slides section) for the full rendering rules.
 
 ## Output Template
 
-See **[OUTPUT-TEMPLATE.md](OUTPUT-TEMPLATE.md)** for the exact TASTE.md output format.
+See **[reference/output-template.md](reference/output-template.md)** for the exact TASTE.md output format.
 
 ## Edge Cases
 
